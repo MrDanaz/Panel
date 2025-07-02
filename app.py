@@ -50,6 +50,7 @@ import discord as discordpy # Renamed to avoid conflict with the oauth 'discord'
 from discord.ext import commands
 import asyncio
 import threading
+import datetime as dt # For timeout duration calculation
 
 # Initialize OAuth
 oauth = OAuth(app)
@@ -1014,30 +1015,44 @@ def ban_member():
 
 
 # Global flag to ensure bot thread starts only once
-bot_started_flag = False
+# and to manage its lifecycle slightly better with Flask's dev server.
+_bot_started_flag = False
+_bot_thread_instance = None # To hold the thread instance
+
+def ensure_bot_is_running():
+    global _bot_started_flag, _bot_thread_instance
+    if not config.get('DISCORD_BOT_TOKEN'):
+        if not _bot_started_flag: # Print only once if no token
+            print("DISCORD_BOT_TOKEN not found, Discord bot will not be started.")
+            _bot_started_flag = True # Mark as "checked"
+        return
+
+    if not _bot_started_flag:
+        print("Attempting to start Discord bot thread...")
+        if _bot_thread_instance is None or not _bot_thread_instance.is_alive():
+            _bot_thread_instance = threading.Thread(target=run_bot, daemon=True)
+            _bot_thread_instance.start()
+            _bot_started_flag = True # Mark that we've attempted to start it.
+            # A short delay might be needed here for the bot to actually connect,
+            # but for now, we assume it will connect in the background.
+            print("Discord bot thread started.")
+        else:
+            print("Discord bot thread already started and alive.")
+            _bot_started_flag = True # Ensure flag is set if already running
+    elif _bot_thread_instance and not _bot_thread_instance.is_alive():
+        # This case handles if the bot thread died for some reason after initial start.
+        print("Bot thread was started but is no longer alive. Attempting to restart...")
+        _bot_thread_instance = threading.Thread(target=run_bot, daemon=True)
+        _bot_thread_instance.start()
+        print("Discord bot thread restarted.")
+
 
 @app.before_request
-def start_bot_once():
-    global bot_started_flag
-    if not bot_started_flag and bot_thread:
-        if config.get('DISCORD_BOT_TOKEN'):
-            print("Starting Discord bot thread from before_request...")
-            bot_thread.start()
-            bot_started_flag = True
-        else:
-            print("DISCORD_BOT_TOKEN not found, bot thread will not be started.")
-            # To prevent re-checking every time if no token
-            bot_started_flag = True # Mark as "checked" even if not started
+def before_request_hook():
+    ensure_bot_is_running()
 
 
 if __name__ == '__main__':
-    # Note: In a production environment, use a WSGI server like Gunicorn or Waitress
-    # The bot thread should ideally be managed by the WSGI server or a process manager in production.
-    # For development with Flask's built-in server, starting it here or via before_request is okay.
-    # If not started by before_request (e.g. if no requests come in immediately), start it here.
-    if not bot_started_flag and bot_thread and config.get('DISCORD_BOT_TOKEN'):
-         print("Starting Discord bot thread from __main__...")
-         bot_thread.start()
-         bot_started_flag = True
-
+    # Ensure bot is running when app starts directly
+    ensure_bot_is_running()
     app.run(debug=True, port=5000)
