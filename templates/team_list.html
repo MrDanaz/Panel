@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Teamliste - Discord Admin Panel{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Teamliste</h1>
+</div>
+
+<div class="card">
+    <div class="card-header">Alle Teammitglieder</div>
+    {% if team_members %}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Discord ID</th>
+                <th>Höchste Teamrolle</th>
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in team_members %}
+            <tr class="sub-card">
+                <td>
+                    {% if member.avatar_url %}
+                        <img src="{{ member.avatar_url }}" alt="{{ member.name }} avatar" style="width: 32px; height: 32px; border-radius: 50%; vertical-align: middle; margin-right: 10px;">
+                    {% else %}
+                        <span style="display: inline-block; width: 32px; height: 32px; border-radius: 50%; background-color: #0e0e11; vertical-align: middle; margin-right: 10px; text-align: center; line-height: 32px;">{{ member.name[0] }}</span>
+                    {% endif %}
+                    {{ member.name }} ({{member.display_name}})
+                </td>
+                <td>{{ member.id }}</td>
+                <td>{{ member.highest_role_name }}</td>
+                <td>
+                    {# Permissions for these actions will be checked server-side using @requires_permission('manage_team_list') #}
+                    <button class="btn btn-sm" onclick="showActionModal('promote', '{{ member.id }}', '{{ member.name }}')">Befördern</button>
+                    <button class="btn btn-sm" onclick="showActionModal('demote', '{{ member.id }}', '{{ member.name }}')">Degradieren</button>
+                    <button class="btn btn-sm btn-warning" onclick="showActionModal('warn', '{{ member.id }}', '{{ member.name }}')">Warnen</button>
+                    <button class="btn btn-sm btn-danger" onclick="showActionModal('kick_team', '{{ member.id }}', '{{ member.name }}')">Aus Team kicken</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Keine Teammitglieder gefunden oder Fehler beim Laden.</p>
+    {% endif %}
+</div>
+
+<!-- Modal for actions -->
+<div id="actionModal" class="modal" style="display:none;">
+    <div class="modal-content card">
+        <span class="close-button" onclick="closeModal()">&times;</span>
+        <h4 id="modalTitle">Aktion ausführen</h4>
+        <form id="actionForm" method="POST"> {# Action URL will be set by JS #}
+            <input type="hidden" name="member_id" id="modalMemberId">
+            <input type="hidden" name="action_type" id="modalActionType"> {# Still useful for JS, even if form action changes #}
+
+            <p>Mitglied: <strong id="modalMemberName"></strong></p>
+
+            <div class="form-group" id="reasonGroup" style="display:none;">
+                <label for="modalReason">Grund:</label>
+                <textarea name="reason" id="modalReason" rows="3" class="form-control"></textarea>
+            </div>
+
+            <div class="form-group" id="roleGroup" style="display:none;">
+                <label for="modalRole">Rolle (für Befördern/Degradieren):</label>
+                <select name="role_id" id="modalRole" class="form-control">
+                    <option value="">-- Rolle wählen --</option>
+                    {% for role_id_str, role_name_str in available_roles_for_promotion_or_demotion %}
+                        <option value="{{ role_id_str }}">{{ role_name_str }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Bestätigen</button>
+        </form>
+    </div>
+</div>
+
+{# Display errors/success messages passed via query parameters #}
+{% if error %}
+    <div class="card" style="background-color: #2a1a1d; border-left: 5px solid #DC3545; padding: 15px; margin-top: 20px;">
+        <p style="color: #ffc2c7; margin:0;"><strong>Fehler:</strong> {{ error }}</p>
+    </div>
+{% endif %}
+{% if success %}
+    <div class="card" style="background-color: #1a2a1d; border-left: 5px solid #28a745; padding: 15px; margin-top: 20px;">
+        <p style="color: #c2ffc7; margin:0;"><strong>Erfolg:</strong> {{ success }}</p>
+    </div>
+{% endif %}
+
+
+<style>
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 0.9em;
+    margin-right: 5px;
+    margin-bottom: 5px; /* For wrapping on small screens */
+}
+
+/* Basic Modal Styling */
+.modal {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    min-width: 400px;
+    max-width: 600px;
+    background-color: #17171a; /* Card color */
+    padding: 30px;
+    border-radius: 5px;
+    position: relative;
+}
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.8em;
+    cursor: pointer;
+    color: #aaa;
+}
+.close-button:hover {
+    color: #ffffff;
+}
+</style>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+function showActionModal(action, memberId, memberName) {
+    document.getElementById('modalMemberId').value = memberId;
+    document.getElementById('modalMemberName').innerText = memberName;
+    document.getElementById('modalActionType').value = action;
+
+    const modalTitle = document.getElementById('modalTitle');
+    const reasonGroup = document.getElementById('reasonGroup');
+    const roleGroup = document.getElementById('roleGroup');
+    const actionForm = document.getElementById('actionForm');
+
+    // Reset visibility
+    reasonGroup.style.display = 'none';
+    document.getElementById('modalReason').required = false;
+    roleGroup.style.display = 'none';
+    document.getElementById('modalRole').required = false;
+
+    if (action === 'promote') {
+        modalTitle.innerText = 'Mitglied befördern: ' + memberName;
+        actionForm.action = "{{ url_for('promote_member') }}"; // Example URL
+        roleGroup.style.display = 'block';
+        document.getElementById('modalRole').required = true;
+        // TODO: Populate role select with roles higher than current, or all team roles
+    } else if (action === 'demote') {
+        modalTitle.innerText = 'Mitglied degradieren: ' + memberName;
+        actionForm.action = "{{ url_for('demote_member') }}"; // Example URL
+        roleGroup.style.display = 'block';
+        document.getElementById('modalRole').required = true;
+        // TODO: Populate role select with roles lower than current
+    } else if (action === 'warn') {
+        modalTitle.innerText = 'Mitglied warnen: ' + memberName;
+        actionForm.action = "{{ url_for('warn_member') }}"; // Example URL
+        reasonGroup.style.display = 'block';
+        document.getElementById('modalReason').required = true;
+    } else if (action === 'kick_team') {
+        modalTitle.innerText = 'Mitglied aus Team kicken: ' + memberName;
+        actionForm.action = "{{ url_for('kick_team_member') }}"; // Example URL
+        reasonGroup.style.display = 'block';
+        document.getElementById('modalReason').required = true;
+    }
+
+    document.getElementById('actionModal').style.display = 'flex';
+}
+
+function closeModal() {
+    document.getElementById('actionModal').style.display = 'none';
+}
+
+// Close modal if clicked outside of modal-content
+window.onclick = function(event) {
+    const modal = document.getElementById('actionModal');
+    if (event.target == modal) {
+        closeModal();
+    }
+}
+</script>
+{% endblock %}

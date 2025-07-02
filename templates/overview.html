@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Übersicht - Discord Admin Panel{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Übersicht</h1>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{% if request.args.get('error') %}
+    <div class="card" style="background-color: #2a1a1d; border-left: 5px solid #DC3545; padding: 15px; margin-bottom: 20px;">
+        <p style="color: #ffc2c7; margin:0;"><strong>Fehler:</strong> {{ request.args.get('error') }}</p>
+    </div>
+{% elif request.args.get('success') %}
+    <div class="card" style="background-color: #1a2a1d; border-left: 5px solid #28a745; padding: 15px; margin-bottom: 20px;">
+        <p style="color: #c2ffc7; margin:0;"><strong>Erfolg:</strong> {{ request.args.get('success') }}</p>
+    </div>
+{% endif %}
+{% if error %} {# For errors passed directly from render_template #}
+    <div class="card" style="background-color: #2a1a1d; border-left: 5px solid #DC3545; padding: 15px; margin-bottom: 20px;">
+        <p style="color: #ffc2c7; margin:0;"><strong>Fehler:</strong> {{ error }}</p>
+    </div>
+{% endif %}
+
+<div class="stats-grid">
+    <div class="card stat-card">
+        <div class="card-header">Insgesamt Mitglieder</div>
+        <p class="stat-value">{{ stats.get('total_members', 'N/A') }}</p>
+    </div>
+    <div class="card stat-card">
+        <div class="card-header">Mitglieder Online</div>
+        <p class="stat-value">{{ stats.get('online_members', 'N/A') }}</p>
+    </div>
+    <div class="card stat-card">
+        <div class="card-header">Gebannt</div>
+        <p class="stat-value">{{ stats.get('banned_members', 'N/A') }}</p>
+    </div>
+    <div class="card stat-card">
+        <div class="card-header">Teamler</div>
+        <p class="stat-value">{{ stats.get('team_members', 'N/A') }}</p>
+    </div>
+</div>
+
+<div class="actions-section">
+    <div class="card">
+        <div class="card-header">Ankündigung senden</div>
+        <form method="POST" action="{{ url_for('send_announcement') }}">
+            <div class="form-group">
+                <label for="announcement_message">Nachricht:</label>
+                <textarea name="message" id="announcement_message" rows="4" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Senden</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header">Abmeldung einreichen</div>
+        <form method="POST" action="{{ url_for('submit_absence') }}">
+            <div class="form-group">
+                <label for="absence_reason">Grund:</label>
+                <textarea name="reason" id="absence_reason" rows="3" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="absence_duration">Dauer (z.B. 1 Tag, bis DD.MM.YYYY):</label>
+                <input type="text" name="duration" id="absence_duration" required>
+            </div>
+            <button type="submit" class="btn">Abmeldung Senden</button>
+        </form>
+    </div>
+</div>
+
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.stat-card {
+    text-align: center;
+}
+.stat-card .card-header {
+    font-size: 1.1em;
+    border-bottom: none; /* No border for stat card headers */
+    margin-bottom: 5px;
+}
+.stat-value {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #ffffff;
+    margin: 10px 0;
+}
+.actions-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+</style>
+{% endblock %}

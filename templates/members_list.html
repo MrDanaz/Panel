@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Mitgliederliste - Discord Admin Panel{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Mitgliederliste</h1>
+</div>
+
+<div class="card">
+    <div class="card-header">Alle Discord Mitglieder</div>
+    {# Add search/filter inputs here later if needed #}
+    {% if members %}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Discord ID</th>
+                <th>Status</th> {# e.g. Online, Offline, Idle #}
+                <th>Joined At</th> {# When they joined the server #}
+                <th>Aktionen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in members %}
+            <tr class="sub-card">
+                <td>
+                    {% if member.avatar_url %}
+                        <img src="{{ member.avatar_url }}" alt="{{ member.name }} avatar" style="width: 32px; height: 32px; border-radius: 50%; vertical-align: middle; margin-right: 10px;">
+                    {% else %}
+                         <span style="display: inline-block; width: 32px; height: 32px; border-radius: 50%; background-color: #0e0e11; vertical-align: middle; margin-right: 10px; text-align: center; line-height: 32px;">{{ member.name[0] }}</span>
+                    {% endif %}
+                    {{ member.full_name }} ({{member.display_name}})
+                    {% if member.is_bot %} <span style="background-color: #0e0e11; color: #aaa; padding: 2px 5px; font-size: 0.8em; border-radius: 3px; margin-left: 5px;">BOT</span> {% endif %}
+                </td>
+                <td>{{ member.id }}</td>
+                <td style="text-transform: capitalize;">{{ member.status }}</td>
+                <td>{{ member.joined_at }}</td> {# Already formatted in app.py #}
+                <td>
+                    {# Permissions for these actions will be checked server-side via @requires_permission('manage_members') #}
+                    <button class="btn btn-sm btn-warning" onclick="showMemberActionModal('timeout', '{{ member.id }}', '{{ member.full_name }}')">Timeout</button>
+                    <button class="btn btn-sm btn-danger" onclick="showMemberActionModal('kick', '{{ member.id }}', '{{ member.full_name }}')">Kicken</button>
+                    <button class="btn btn-sm btn-danger" onclick="showMemberActionModal('ban', '{{ member.id }}', '{{ member.full_name }}')">Bannen</button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Keine Mitglieder gefunden oder Fehler beim Laden.</p>
+    {% endif %}
+</div>
+
+<!-- Modal for member actions -->
+<div id="memberActionModal" class="modal" style="display:none;">
+    <div class="modal-content card">
+        <span class="close-button" onclick="closeMemberModal()">&times;</span>
+        <h4 id="memberModalTitle">Aktion ausführen</h4>
+        <form id="memberActionForm" method="POST"> {# Action URL will be set by JS #}
+            <input type="hidden" name="member_id" id="memberModalMemberId">
+            <input type="hidden" name="action_type" id="memberModalActionType">
+
+            <p>Mitglied: <strong id="memberModalMemberName"></strong></p>
+
+            <div class="form-group" id="memberReasonGroup" style="display:none;">
+                <label for="memberModalReason">Grund (optional für Kick, empfohlen für Ban/Timeout):</label>
+                <textarea name="reason" id="memberModalReason" rows="3"></textarea>
+            </div>
+
+            <div class="form-group" id="timeoutDurationGroup" style="display:none;">
+                <label for="memberModalTimeoutDuration">Timeout Dauer (z.B. 60s, 5m, 1h, 1d, 1w):</label>
+                <input type="text" name="duration" id="memberModalTimeoutDuration" placeholder="z.B. 10m für 10 Minuten" class="form-control">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Bestätigen</button>
+        </form>
+    </div>
+</div>
+
+{# Display errors/success messages passed via query parameters #}
+{% if error %}
+    <div class="card" style="background-color: #2a1a1d; border-left: 5px solid #DC3545; padding: 15px; margin-top: 20px;">
+        <p style="color: #ffc2c7; margin:0;"><strong>Fehler:</strong> {{ error }}</p>
+    </div>
+{% endif %}
+{% if success %}
+    <div class="card" style="background-color: #1a2a1d; border-left: 5px solid #28a745; padding: 15px; margin-top: 20px;">
+        <p style="color: #c2ffc7; margin:0;"><strong>Erfolg:</strong> {{ success }}</p>
+    </div>
+{% endif %}
+
+<style>
+/* Re-use .btn-sm and modal styles from team_list.html or define globally if preferred */
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 0.9em;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+.modal {
+    /* ... styles from team_list.html ... */
+    position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.6); z-index: 1000;
+    display: flex; justify-content: center; align-items: center;
+}
+.modal-content {
+    /* ... styles from team_list.html ... */
+    min-width: 400px; max-width: 600px; background-color: #17171a;
+    padding: 30px; border-radius: 5px; position: relative;
+}
+.close-button {
+    /* ... styles from team_list.html ... */
+    position: absolute; top: 10px; right: 15px;
+    font-size: 1.8em; cursor: pointer; color: #aaa;
+}
+.close-button:hover { color: #ffffff; }
+</style>
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+function showMemberActionModal(action, memberId, memberName) {
+    document.getElementById('memberModalMemberId').value = memberId;
+    document.getElementById('memberModalMemberName').innerText = memberName;
+    document.getElementById('memberModalActionType').value = action;
+
+    const modalTitle = document.getElementById('memberModalTitle');
+    const reasonGroup = document.getElementById('memberReasonGroup');
+    const timeoutGroup = document.getElementById('timeoutDurationGroup');
+    const actionForm = document.getElementById('memberActionForm');
+
+    // Reset visibility and requirements
+    reasonGroup.style.display = 'block'; // Reason is generally good for all these actions
+    document.getElementById('memberModalReason').required = false;
+    timeoutGroup.style.display = 'none';
+    document.getElementById('memberModalTimeoutDuration').required = false;
+
+    if (action === 'timeout') {
+        modalTitle.innerText = 'Mitglied Timeout: ' + memberName;
+        actionForm.action = "{{ url_for('timeout_member') }}"; // Example URL
+        timeoutGroup.style.display = 'block';
+        document.getElementById('memberModalTimeoutDuration').required = true;
+        document.getElementById('memberModalReason').required = true; // Discord API requires reason for timeout
+    } else if (action === 'kick') {
+        modalTitle.innerText = 'Mitglied Kicken: ' + memberName;
+        actionForm.action = "{{ url_for('kick_member') }}"; // Example URL
+        // Reason is optional for kick via UI, but good practice
+    } else if (action === 'ban') {
+        modalTitle.innerText = 'Mitglied Bannen: ' + memberName;
+        actionForm.action = "{{ url_for('ban_member') }}"; // Example URL
+        document.getElementById('memberModalReason').required = true; // Reason often required or highly recommended for bans
+    }
+
+    document.getElementById('memberActionModal').style.display = 'flex';
+}
+
+function closeMemberModal() {
+    document.getElementById('memberActionModal').style.display = 'none';
+}
+
+// Close modal if clicked outside of modal-content
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('memberActionModal');
+    if (event.target == modal) {
+        closeMemberModal();
+    }
+});
+</script>
+{% endblock %}

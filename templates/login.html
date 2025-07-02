@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Discord Admin Panel{% endblock %}
+
+{% block head_extra %}
+<style>
+    /* Specific styles for login page if body structure from base.html is not suitable */
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        margin: 0; /* Reset margin */
+    }
+    .sidebar { display: none; } /* Hide sidebar on login page */
+    .content {
+        margin-left: 0; /* Reset margin for content area */
+        width: 100%;
+        max-width: 450px; /* Limit width of login card */
+        padding: 0; /* Reset padding */
+        display: flex; /* Use flex to center the card */
+        justify-content: center;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-card card"> {# Reuse card style but with specific login adjustments #}
+    <div class="card-header">
+        Login mit Discord
+    </div>
+    {% if request.args.get('error') %}
+        <p style="color: #DC3545; border: 1px solid #DC3545; padding: 10px; border-radius: 5px; background-color: rgba(220, 53, 69, 0.1);">
+            <strong>Login Fehler:</strong> {{ request.args.get('error') }}
+        </p>
+    {% endif %}
+    <p>Bitte melde dich mit deinem Discord Account an, um fortzufahren.</p>
+    <a href="{{ url_for('discord_login') }}" class="btn btn-primary">
+        {# Using a simple text or SVG icon for Discord to avoid external FontAwesome dependency for now #}
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
+            <path d="M20.317 4.484A10.066 10.066 0 0012.002 2C6.478 2 2 6.477 2 12.002s4.478 10.002 10.002 10.002c2.034 0 3.93-.602 5.522-1.635a.497.497 0 00.139-.676 9.986 9.986 0 01-1.882-4.042.502.502 0 00-.74-.45 7.98 7.98 0 00-1.02.095c-.682.146-1.38.27-2.085.27-.704 0-1.403-.124-2.086-.27-.02 0-.038-.003-.057-.006a7.982 7.982 0 00-1.02-.095.502.502 0 00-.74.45 9.987 9.987 0 01-1.882 4.042.496.496 0 00.138.676A10.064 10.064 0 0012.002 22.003c5.524 0 10.002-4.477 10.002-10.001 0-1.6-.387-3.103-1.06-4.44a.502.502 0 00-.627-.079zm-4.71 7.172c-.99 0-1.792.884-1.792 1.972s.802 1.972 1.792 1.972 1.792-.883 1.792-1.972-.802-1.972-1.792-1.972zm-7.204 0c-.99 0-1.792.884-1.792 1.972s.802 1.972 1.792 1.972S9.915 14.51 9.915 13.628s-.802-1.972-1.792-1.972z"/>
+        </svg>
+        Mit Discord anmelden
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+{# No specific scripts for login page for now #}
+{% endblock %}

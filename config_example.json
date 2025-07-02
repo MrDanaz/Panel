@@ -1,0 +1,41 @@
+{
+  "DISCORD_CLIENT_ID": "YOUR_DISCORD_CLIENT_ID",
+  "DISCORD_CLIENT_SECRET": "YOUR_DISCORD_CLIENT_SECRET",
+  "DISCORD_REDIRECT_URI": "http://localhost:5000/callback",
+  "DISCORD_BOT_TOKEN": "YOUR_DISCORD_BOT_TOKEN",
+  "SERVER_ID": "YOUR_SERVER_ID",
+  "TEAMLER_HAUPT_ROLLE_ID": "TEAMLER_HAUPT_ROLLE_ID",
+  "TEAMLER_ROLLEN_IDS": [
+    "TEAMLER_ROLLE_ID_1",
+    "TEAMLER_ROLLE_ID_2",
+    "ADMIN_ROLLE_ID"
+  ],
+  "ANKUENDIGUNG_KANAL_ID": "ANKUENDIGUNG_KANAL_ID",
+  "ABMELDUNG_KANAL_ID": "ABMELDUNG_KANAL_ID",
+  "TEAM_UPDATES_KANAL_ID": "TEAM_UPDATES_KANAL_ID",
+  "PERMISSIONS": {
+    "ADMIN_ROLLE_ID": {
+      "view_team_list": true,
+      "manage_team_list": true,
+      "view_members": true,
+      "manage_members": true,
+      "send_announcements": true,
+      "view_applications": true,
+      "manage_applications": true,
+      "view_complaints": true,
+      "manage_complaints": true
+    },
+    "TEAMLER_ROLLE_ID_1": {
+      "view_team_list": true,
+      "manage_team_list": false,
+      "view_members": true,
+      "manage_members": false,
+      "send_announcements": false,
+      "view_applications": true,
+      "manage_applications": false,
+      "view_complaints": true,
+      "manage_complaints": false
+    }
+  },
+  "APP_SECRET_KEY": "REPLACE_THIS_WITH_A_REAL_SECRET_KEY"
+}

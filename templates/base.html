@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Discord Admin Panel{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h3>Admin Panel</h3>
+        </div>
+        <ul>
+            <li><a href="{{ url_for('overview') }}">Übersicht</a></li>
+            <li><a href="{{ url_for('team_list') }}">Teamliste</a></li>
+            <li><a href="{{ url_for('members_list') }}">Mitglieder</a></li>
+            <li><a href="{{ url_for('applications') }}">Bewerbungen</a></li>
+            <li><a href="{{ url_for('complaints') }}">Beschwerden</a></li>
+            {% if session.get('user_id') %}
+            <li><a href="{{ url_for('logout') }}">Logout ({{ session.get('user_name', 'User') }})</a></li>
+            {% else %}
+            <li><a href="{{ url_for('login_page') }}">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts_extra %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,6 @@
+Flask>=2.0
+discord.py>=2.0 # For bot interactions, if separate from web panel
+python-dotenv>=0.19 # Optional: for .env file management
+requests>=2.25 # For direct API calls
+Authlib>=0.15 # For OAuth handling
+# requests-oauthlib is not strictly needed if using Authlib directly
